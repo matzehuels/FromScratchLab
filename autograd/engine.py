@@ -141,8 +141,8 @@ class Tensor(object):
         """Compute hyperbolic tangent of tensor.
 
         Uses a numerically stable implementation:
-        tanh(x) = (e^x - e^-x)/(e^x + e^-x)
-        For large x, we clamp the input to avoid overflow in float32 (~88.72)
+            tanh(x) = (e^x - e^-x)/(e^x + e^-x)
+        For large x, we clamp the input to avoid overflow in float32
         """
         clamped = self.max(-100).max(-100)
         exp_pos = clamped.exp()
