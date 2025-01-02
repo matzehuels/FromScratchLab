@@ -3,7 +3,7 @@
 import numpy as np
 from hypothesis import given
 
-from engine import Operation, Tensor
+from autograd.engine import Operation, Tensor
 from tests.conftest import arrays_strategy, tensors_strategy
 
 

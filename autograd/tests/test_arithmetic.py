@@ -4,7 +4,7 @@ import numpy as np
 from hypothesis import given, note
 from hypothesis import strategies as st
 
-from engine import Operation, Tensor
+from autograd.engine import Operation, Tensor
 from tests.conftest import (
     ATOL,
     RTOL,

@@ -5,7 +5,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from engine import Tensor, TensorLike, _cast_array, _cast_tensor
+from autograd.engine import Tensor, TensorLike, _cast_array, _cast_tensor
 from tests.conftest import (
     arrays_strategy,
     default_floats_strategy,

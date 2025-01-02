@@ -7,7 +7,7 @@ from hypothesis import settings
 from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
-from engine import Tensor
+from autograd.engine import Tensor
 
 # Tolerances
 RTOL = 1e-6  # relative tolerance for float32
