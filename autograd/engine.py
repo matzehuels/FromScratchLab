@@ -131,6 +131,12 @@ class Tensor(object):
         """Compute element-wise exponential of tensor."""
         return Tensor(np.exp(self.data), (self,), Operation.EXP)
 
+    def min(self, other: TensorLike) -> Tensor:
+        """Return element-wise minimum between self and other."""
+        other = _cast_tensor(other)
+        out = Tensor(np.minimum(self.data, other.data), (self, other), Operation.MAX)
+        return out
+
     def max(self, other: TensorLike) -> Tensor:
         """Return element-wise maximum between self and other."""
         other = _cast_tensor(other)
@@ -144,7 +150,7 @@ class Tensor(object):
             tanh(x) = (e^x - e^-x)/(e^x + e^-x)
         For large x, we clamp the input to avoid overflow in float32
         """
-        clamped = self.max(-100).max(-100)
+        clamped = self.max(-100).min(100)
         exp_pos = clamped.exp()
         exp_neg = (-clamped).exp()
         out = (exp_pos - exp_neg) / (exp_pos + exp_neg)
