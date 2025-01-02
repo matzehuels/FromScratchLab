@@ -26,6 +26,7 @@ class Operation(Enum):
     SUBTRACT = "-"
     DIVIDE = "/"
     MAX = "max"
+    MIN = "min"
     TANH = "tanh"
     SIGMOID = "sigmoid"
     RELU = "relu"
@@ -134,7 +135,7 @@ class Tensor(object):
     def min(self, other: TensorLike) -> Tensor:
         """Return element-wise minimum between self and other."""
         other = _cast_tensor(other)
-        out = Tensor(np.minimum(self.data, other.data), (self, other), Operation.MAX)
+        out = Tensor(np.minimum(self.data, other.data), (self, other), Operation.MIN)
         return out
 
     def max(self, other: TensorLike) -> Tensor:
@@ -148,11 +149,11 @@ class Tensor(object):
 
         Uses a numerically stable implementation:
             tanh(x) = (e^x - e^-x)/(e^x + e^-x)
-        For large x, we clamp the input to avoid overflow in float32
+        For large x, we clip the input to avoid overflow in float32
         """
-        clamped = self.max(-100).min(100)
-        exp_pos = clamped.exp()
-        exp_neg = (-clamped).exp()
+        clipped = self.max(-100).min(100)
+        exp_pos = clipped.exp()
+        exp_neg = (-clipped).exp()
         out = (exp_pos - exp_neg) / (exp_pos + exp_neg)
         out._op = Operation.TANH
         return out
