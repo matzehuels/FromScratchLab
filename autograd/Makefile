@@ -1,4 +1,4 @@
-.PHONY: test format lint clean type-check check
+.PHONY: test lint clean type-check check
 
 # Config file
 CONFIG := pyproject.toml
@@ -10,11 +10,6 @@ venv:
 # Test commands
 test:
 	python -m pytest
-
-# Format and lint
-format:
-	black --config $(CONFIG) .
-	isort --settings-path $(CONFIG) .
 
 lint:
 	ruff check --config $(CONFIG) .
@@ -32,4 +27,4 @@ clean:
 	find . -type d -name ".ruff_cache" -exec rm -rf {} +
 
 # Run all checks
-check: format lint type-check test
+check: lint type-check test
