@@ -28,25 +28,23 @@ class Neuron(object):
         activation: Activation,
         label: Optional[str] = None,
     ) -> None:
-        """Initialize a neuron. In a classic MLP (Multi-Layer Perceptron), each neuron should take a vector of scalars
-        as input and produce a single scalar output.
+        """Initialize a neuron with Xavier/Glorot initialization.
 
-        Parameters
-        ----------
-        n_input : int
-            Number of inputs
-        activation : Activation
-            Activation function to use.
-        label : Optional[str]
-            Optional label for visualizations.
+        The weights are initialized from a normal distribution with:
+        - mean = 0
+        - std = sqrt(2 / (n_input + 1))  # +1 for the output
+
+        This helps prevent vanishing/exploding gradients and maintains
+        similar variance of activations and gradients across layers.
         """
         self.label = label
         self.n_input = n_input
         self.activation = activation
 
-        # Initialize weights to match input shape for broadcasting
-        self.w = Tensor(np.random.uniform(-1, 1, size=(1, n_input)), label="w")
-        self.b = Tensor(np.random.uniform(-1, 1, size=(1,)), label="b")
+        # Xavier/Glorot initialization
+        scale = np.sqrt(2.0 / (n_input + 1))  # +1 for the output
+        self.w = Tensor(np.random.normal(0, scale, size=(1, n_input)), label="w")
+        self.b = Tensor(np.zeros((1,)), label="b")  # Initialize bias to zero
 
     @property
     def parameters(self) -> List[Tensor]:
