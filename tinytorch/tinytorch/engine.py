@@ -28,6 +28,10 @@ class Operation(Enum):
     POW = "**"
     MAX = "max"
     MIN = "min"
+    MATMUL = "@"
+    SUM = "sum"
+    STACK = "stack"
+    IDENT = "ident"
 
 
 def _cast_array(data: ArrayLike) -> np.ndarray:
@@ -36,11 +40,12 @@ def _cast_array(data: ArrayLike) -> np.ndarray:
         array = np.array(data, dtype=np.float32)
     elif isinstance(data, np.ndarray):
         array = data.astype(np.float32)
-    elif isinstance(data, (int, float)):
+    elif isinstance(data, (int, float, np.float32, np.int32)):
         array = np.array(data, dtype=np.float32)
     else:
         raise TypeError("Wrong data type")
-    if array.shape == ():
+    # Handle scalar numpy arrays (0-dim arrays)
+    if array.shape == () or array.ndim == 0:
         array = array.reshape(())
     return array
 
@@ -52,6 +57,8 @@ def _cast_tensor(x: TensorLike) -> Tensor:
 
 
 class Tensor(object):
+    """Core tensor implementation."""
+
     def __init__(
         self,
         data: TensorLike,
@@ -218,6 +225,30 @@ class Tensor(object):
         other = _cast_tensor(other)
         return other / self
 
+    def __matmul__(self, other: TensorLike) -> Tensor:
+        """Matrix multiplication using @ operator.
+
+        Forward pass: z = x @ y
+        Backward pass:
+            dz/dx = grad @ y.T
+            dz/dy = x.T @ grad
+        """
+        other = _cast_tensor(other)
+        out = Tensor(np.matmul(self.data, other.data), None, (self, other), Operation.MATMUL)
+
+        def _backward():
+            """Local derivatives using matrix multiplication rules."""
+            self._broadcast_backward(np.matmul(out.grad, other.data.T), out.grad)
+            other._broadcast_backward(np.matmul(self.data.T, out.grad), out.grad)
+
+        out._backward = _backward
+        return out
+
+    def __rmatmul__(self, other: TensorLike) -> Tensor:
+        """Handle matrix multiplication when tensor is the right operand."""
+        other = _cast_tensor(other)
+        return other @ self
+
     def exp(self) -> Tensor:
         """Compute element-wise exponential of tensor.
 
@@ -318,6 +349,28 @@ class Tensor(object):
         out._backward = _backward
         return out
 
+    def sum(self, axis: Optional[int | Tuple[int, ...]] = None) -> Tensor:
+        """Sum tensor over specified axes.
+
+        Forward pass: z = sum(x, axis)
+        Backward pass: Gradient is broadcasted back to match input shape
+        """
+        # Convert single axis to tuple for consistent handling
+        if isinstance(axis, int):
+            axis = (axis,)
+        # If axis is None, sum over all axes
+        if axis is None:
+            axis = tuple(range(self.data.ndim))
+
+        out = Tensor(np.sum(self.data, axis=axis), None, (self,), Operation.SUM)
+
+        def _backward():
+            """Local derivative is 1, broadcasted to match input shape."""
+            self._broadcast_backward(out.grad, out.grad)
+
+        out._backward = _backward
+        return out
+
     def backward(self) -> None:
         """Compute gradients through back propagation.
 
@@ -343,3 +396,49 @@ class Tensor(object):
         self.grad = np.ones_like(self.data, np.float32)  # Initialize with ones for root
         for tensor in reversed(topo):
             tensor._backward()
+
+    @staticmethod
+    def stack(tensors: List[Tensor], axis: int = 0) -> Tensor:
+        """Stack tensors along a new axis.
+
+        Parameters
+        ----------
+        tensors : List[Tensor]
+            List of tensors to stack. All tensors must have the same shape.
+        axis : int
+            Axis along which to stack the tensors.
+
+        Returns
+        -------
+        Tensor
+            A new tensor with an additional dimension at the specified axis.
+        """
+        # Stack arrays along specified axis and new tensor with stacked data
+        stacked = np.stack([t.data for t in tensors], axis=axis)
+        out = Tensor(stacked, None, tuple(tensors), Operation.STACK)
+
+        def _backward():
+            """Split gradient along stacking axis and distribute to inputs."""
+            grads = np.split(out.grad, len(tensors), axis=axis)
+            for tensor, grad in zip(tensors, grads):
+                # Squeeze out the stacking dimension before broadcasting
+                grad_squeezed = np.squeeze(grad, axis=axis) if axis < grad.ndim else grad
+                tensor._broadcast_backward(grad_squeezed, grad_squeezed)
+
+        out._backward = _backward
+        return out
+
+    def lin(self) -> Tensor:
+        """Linear (identity) activation function.
+
+        Forward pass: z = x
+        Backward pass: dz/dx = 1
+        """
+        out = Tensor(self.data, None, (self,), Operation.IDENT)
+
+        def _backward():
+            """Local derivative is 1."""
+            self._broadcast_backward(out.grad, out.grad)
+
+        out._backward = _backward
+        return out

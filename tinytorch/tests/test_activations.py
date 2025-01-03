@@ -1,10 +1,9 @@
 """Tests for neural network activation functions."""
 
 import hypothesis.strategies as st
-from hypothesis import given, settings
 import numpy as np
+from hypothesis import given, settings
 
-from tinytorch.engine import Operation, Tensor
 from tests.conftest import (
     ATOL,
     RTOL,
@@ -12,6 +11,7 @@ from tests.conftest import (
     same_shape_tensors_strategy,
     tensors_strategy,
 )
+from tinytorch.engine import Operation, Tensor
 
 
 @given(same_shape_tensors_strategy())
@@ -22,6 +22,26 @@ def test_max_operation(tensors: tuple[Tensor, Tensor]) -> None:
     result = t1.max(t2)
     assert result._op == Operation.MAX
     np.testing.assert_array_equal(result.data, np.maximum(t1.data, t2.data))
+
+
+@given(tensors_strategy())
+def test_lin_operation(tensor):
+    """Test linear (identity) activation function.
+
+    Properties tested:
+    1. Basic identity function: output equals input
+    2. Operation type is correctly set
+    3. Children are tracked properly
+    4. Numerical correctness against numpy
+    """
+    result = tensor.lin()
+    assert result._op == Operation.IDENT
+    assert result._children == {tensor}
+    np.testing.assert_array_equal(
+        result.data,
+        tensor.data,
+        "Linear activation should match input exactly",
+    )
 
 
 @given(tensors_strategy(), default_floats_strategy)

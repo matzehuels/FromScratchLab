@@ -5,8 +5,8 @@ import torch
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from tinytorch.engine import Tensor
 from tests.conftest import ATOL, RTOL, same_shape_tensors_strategy, tensors_strategy
+from tinytorch.engine import Tensor
 
 
 @given(same_shape_tensors_strategy())
@@ -304,3 +304,82 @@ def test_min_gradients(tensors):
 
     np.testing.assert_allclose(x.grad, x_torch.grad.numpy(), rtol=RTOL, atol=ATOL)
     np.testing.assert_allclose(y.grad, y_torch.grad.numpy(), rtol=RTOL, atol=ATOL)
+
+
+@given(tensors_strategy())
+def test_sum_gradients(tensor):
+    """Test gradients of sum operation against PyTorch."""
+    x = tensor
+    y = x.sum()  # Sum over all axes
+    y.backward()
+
+    x_torch = torch.tensor(x.data, requires_grad=True)
+    y_torch = x_torch.sum()
+    y_torch.backward(torch.ones_like(y_torch))
+
+    np.testing.assert_allclose(x.grad, x_torch.grad.numpy(), rtol=RTOL, atol=ATOL)
+
+
+def test_stack_gradients():
+    """Test gradient computation for stacked tensors against PyTorch."""
+    # Test 1: Simple stacking and sum
+    t1 = Tensor([1.0, 2.0])
+    t2 = Tensor([3.0, 4.0])
+    t3 = Tensor([5.0, 6.0])
+
+    # Create corresponding PyTorch tensors
+    t1_torch = torch.tensor([1.0, 2.0], requires_grad=True)
+    t2_torch = torch.tensor([3.0, 4.0], requires_grad=True)
+    t3_torch = torch.tensor([5.0, 6.0], requires_grad=True)
+
+    # Stack and sum in both frameworks
+    stacked = Tensor.stack([t1, t2, t3], axis=0)  # shape: (3, 2)
+    result = stacked.sum()
+
+    stacked_torch = torch.stack([t1_torch, t2_torch, t3_torch], dim=0)
+    result_torch = stacked_torch.sum()
+
+    # Backpropagate
+    result.backward()
+    result_torch.backward()
+
+    # Compare gradients
+    np.testing.assert_allclose(t1.grad, t1_torch.grad.numpy(), rtol=RTOL, atol=ATOL)
+    np.testing.assert_allclose(t2.grad, t2_torch.grad.numpy(), rtol=RTOL, atol=ATOL)
+    np.testing.assert_allclose(t3.grad, t3_torch.grad.numpy(), rtol=RTOL, atol=ATOL)
+
+    # Test 2: Stack along different axis and more complex computation
+    t1 = Tensor([[1.0, 2.0], [3.0, 4.0]])
+    t2 = Tensor([[5.0, 6.0], [7.0, 8.0]])
+
+    t1_torch = torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True)
+    t2_torch = torch.tensor([[5.0, 6.0], [7.0, 8.0]], requires_grad=True)
+
+    # Stack along last axis, multiply by 2, and sum
+    stacked = Tensor.stack([t1, t2], axis=2)  # shape: (2, 2, 2)
+    result = (stacked * 2.0).sum()
+
+    stacked_torch = torch.stack([t1_torch, t2_torch], dim=2)
+    result_torch = (stacked_torch * 2.0).sum()
+
+    # Backpropagate
+    result.backward()
+    result_torch.backward()
+
+    # Compare gradients
+    np.testing.assert_allclose(t1.grad, t1_torch.grad.numpy(), rtol=RTOL, atol=ATOL)
+    np.testing.assert_allclose(t2.grad, t2_torch.grad.numpy(), rtol=RTOL, atol=ATOL)
+
+
+@given(tensors_strategy())
+def test_lin_gradients(tensor):
+    """Test gradients of linear activation against PyTorch."""
+    x = tensor
+    y = x.lin()  # Should give gradient of 1
+    y.backward()
+
+    x_torch = torch.tensor(x.data, requires_grad=True)
+    y_torch = x_torch  # Identity function
+    y_torch.backward(torch.ones_like(y_torch))
+
+    np.testing.assert_allclose(x.grad, x_torch.grad.numpy(), rtol=RTOL, atol=ATOL)

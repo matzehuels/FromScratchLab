@@ -3,6 +3,7 @@
 import numpy as np
 from hypothesis import given, note
 from hypothesis import strategies as st
+
 from tests.conftest import (
     ATOL,
     RTOL,
@@ -10,7 +11,6 @@ from tests.conftest import (
     same_shape_tensors_strategy,
     tensors_strategy,
 )
-
 from tinytorch.engine import Operation, Tensor
 
 
@@ -78,9 +78,7 @@ def test_multiply_operation(tensors: tuple[Tensor, Tensor]) -> None:
 
     # Test scalar-tensor multiplication (tests __rmul__)
     reverse = 2.0 * t1
-    assert (
-        reverse._op == Operation.MULT
-    ), "Scalar multiplication should use MULT operation"
+    assert reverse._op == Operation.MULT, "Scalar multiplication should use MULT operation"
     np.testing.assert_array_equal(
         reverse.data,
         2.0 * t1.data,
@@ -239,3 +237,125 @@ def test_divide_with_scalar(tensor: Tensor, scalar: float) -> None:
     result2 = scalar / tensor
     np.testing.assert_allclose(result1.data, tensor.data / scalar, rtol=RTOL, atol=ATOL)
     np.testing.assert_allclose(result2.data, scalar / tensor.data, rtol=RTOL, atol=ATOL)
+
+
+def test_matmul_operation() -> None:
+    """Test matrix multiplication operations.
+
+    Properties tested:
+    1. Matrix-matrix multiplication
+    2. Matrix-vector multiplication
+    3. Vector-vector multiplication (dot product)
+    4. Operation type is correctly set
+    5. Children are tracked properly
+    6. Numerical correctness against numpy
+    """
+    # Test matrix-matrix multiplication
+    m1 = Tensor([[1.0, 2.0], [3.0, 4.0]])  # 2x2
+    m2 = Tensor([[5.0, 6.0], [7.0, 8.0]])  # 2x2
+    result = m1 @ m2
+    assert result._op == Operation.MATMUL
+    assert result._children == {m1, m2}
+    np.testing.assert_array_equal(result.data, np.matmul(m1.data, m2.data))
+
+    # Test matrix-vector multiplication
+    v = Tensor([1.0, 2.0])  # 2x1
+    result = m1 @ v
+    assert result._op == Operation.MATMUL
+    np.testing.assert_array_equal(result.data, np.matmul(m1.data, v.data))
+
+    # Test vector-vector multiplication (dot product)
+    v1 = Tensor([1.0, 2.0])
+    v2 = Tensor([3.0, 4.0])
+    result = v1 @ v2
+    assert result._op == Operation.MATMUL
+    assert result.shape == (), "Dot product should return a scalar"
+    np.testing.assert_array_equal(result.data, np.matmul(v1.data, v2.data))
+    assert result.data.item() == 11.0  # 1*3 + 2*4 = 11
+
+    # Test scalar-matrix multiplication error
+    scalar = Tensor(2.0)
+    try:
+        _ = scalar @ m1
+        assert False, "Should raise ValueError for scalar @ matrix"
+    except ValueError:
+        pass
+
+
+@given(tensors_strategy())
+def test_sum_operation(tensor: Tensor) -> None:
+    """Test sum operations on tensors.
+
+    Properties tested:
+    1. Basic tensor sum over all axes
+    2. Sum over specific axis
+    3. Operation type is correctly set
+    4. Children are tracked properly
+    5. Numerical correctness against numpy
+    """
+    note(f"Testing shape: {tensor.shape}")
+
+    # Test sum over all axes
+    result = tensor.sum()
+    assert result._op == Operation.SUM
+    assert result._children == {tensor}
+    np.testing.assert_array_equal(
+        result.data,
+        np.sum(tensor.data),
+        "Tensor sum should match numpy sum",
+    )
+
+    # Test sum over first axis if tensor has multiple dimensions
+    if len(tensor.shape) > 1:
+        result = tensor.sum(axis=0)
+        assert result._op == Operation.SUM
+        assert result._children == {tensor}
+        np.testing.assert_array_equal(
+            result.data,
+            np.sum(tensor.data, axis=0),
+            "Tensor sum over axis should match numpy sum",
+        )
+
+    # Test sum over multiple axes if tensor has at least 3 dimensions
+    if len(tensor.shape) >= 3:
+        axes = (0, 2)
+        result = tensor.sum(axis=axes)
+        assert result._op == Operation.SUM
+        assert result._children == {tensor}
+        np.testing.assert_array_equal(
+            result.data,
+            np.sum(tensor.data, axis=axes),
+            "Tensor sum over multiple axes should match numpy sum",
+        )
+
+
+def test_stack_operation():
+    """Test stacking tensors along different axes."""
+    # Test 1D tensors
+    t1 = Tensor([1, 2, 3])
+    t2 = Tensor([4, 5, 6])
+    t3 = Tensor([7, 8, 9])
+
+    # Stack along axis 0 (default)
+    result = Tensor.stack([t1, t2, t3])
+    expected = np.stack([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    np.testing.assert_allclose(result.data, expected, rtol=RTOL, atol=ATOL)
+
+    # Stack along axis 1
+    result = Tensor.stack([t1, t2, t3], axis=1)
+    expected = np.stack([[1, 2, 3], [4, 5, 6], [7, 8, 9]], axis=1)
+    np.testing.assert_allclose(result.data, expected, rtol=RTOL, atol=ATOL)
+
+    # Test 2D tensors
+    t1 = Tensor([[1, 2], [3, 4]])
+    t2 = Tensor([[5, 6], [7, 8]])
+
+    # Stack along axis 0
+    result = Tensor.stack([t1, t2])
+    expected = np.stack([[[1, 2], [3, 4]], [[5, 6], [7, 8]]])
+    np.testing.assert_allclose(result.data, expected, rtol=RTOL, atol=ATOL)
+
+    # Stack along axis 2
+    result = Tensor.stack([t1, t2], axis=2)
+    expected = np.stack([[[1, 2], [3, 4]], [[5, 6], [7, 8]]], axis=2)
+    np.testing.assert_allclose(result.data, expected, rtol=RTOL, atol=ATOL)

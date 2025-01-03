@@ -6,7 +6,7 @@ TinyTorch is a minimal implementation of [automatic differentiation](https://en.
 
 TinyTorch provides the fundamental building blocks needed for automatic differentiation:
 - Tensor operations (+, -, *, /) with automatic gradient tracking
-- Neural network activation functions ([ReLU](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)), [sigmoid](https://en.wikipedia.org/wiki/Sigmoid_function), [tanh](https://en.wikipedia.org/wiki/Hyperbolic_functions))
+- Basic neural network activation functions
 - Broadcasting support for scalar operations
 - Type safety through annotations and strict checking
 - Comprehensive property-based testing
@@ -138,3 +138,87 @@ TinyTorch is built with modern Python tools:
 - [MyPy](http://mypy-lang.org/) for static type checking
 - [Pytest](https://docs.pytest.org/) and [Hypothesis](https://hypothesis.works/) for robust testing
 - [PyTorch](https://pytorch.org/) for gradient verification
+
+## Neural Network Components
+
+TinyTorch implements a hierarchical neural network architecture consisting of three main components:
+
+### 1. Neuron
+
+The fundamental building block of neural networks. Each neuron performs a weighted sum of its inputs followed by a non-linear activation function:
+
+```python
+# Create a neuron with 4 inputs using tanh activation
+neuron = Neuron(n_input=4, activation=Activation.TANH)
+
+# Forward pass with batch of 3 samples
+x = Tensor(np.random.randn(3, 4))  # shape: (batch_size=3, n_input=4)
+output = neuron(x)  # shape: (batch_size=3, 1)
+```
+
+### 2. Layer
+
+A collection of neurons that process input in parallel. Each neuron in a layer operates independently on the same input:
+
+```python
+# Create a layer with 6 neurons, each taking 4 inputs
+layer = Layer(n_input=4, n_neurons=6, activation=Activation.RELU)
+
+# Forward pass
+x = Tensor(np.random.randn(3, 4))  # shape: (batch_size=3, n_input=4)
+output = layer(x)  # shape: (batch_size=3, n_neurons=6)
+```
+
+### 3. Multi-Layer Perceptron (MLP)
+
+[Multilayer perceptrons](https://en.wikipedia.org/wiki/Multilayer_perceptron) (MLPs) are a class of feed-forward [artificial neural networks](https://en.wikipedia.org/wiki/Artificial_neural_network) that can learn non-linear relationships between inputs and outputs through supervised learning. They consist of at least three layers:
+
+1. **Input Layer**: Receives the raw input features
+2. **Hidden Layer(s)**: Learns intermediate representations
+3. **Output Layer**: Produces the final prediction
+
+```python
+# Create an MLP for MNIST digit classification
+mlp = MLP(
+    n_input=784,  # 28x28 input image
+    layers=[
+        (128, Activation.RELU),    # hidden layer: 128 neurons with ReLU
+        (10, Activation.SIGMOID),  # output layer: 10 neurons (one per digit)
+    ]
+)
+
+# Forward pass
+x = Tensor(np.random.randn(32, 784))  # batch of 32 images
+output = mlp(x)  # shape: (32, 10) - probabilities for each digit
+```
+
+## Activation Functions
+
+TinyTorch supports several activation functions, each serving different purposes:
+
+1. **[ReLU (Rectified Linear Unit)](https://en.wikipedia.org/wiki/Rectifier_(neural_networks))**
+   - Formula: `max(0, x)`
+   - Properties: Simple, computationally efficient, helps with vanishing gradient
+
+2. **[Sigmoid](https://en.wikipedia.org/wiki/Sigmoid_function)**
+   - Formula: `1 / (1 + e**(-x))`
+   - Properties: Outputs between 0 and 1, useful for binary classification
+
+3. **[Tanh (Hyperbolic Tangent)](https://en.wikipedia.org/wiki/Hyperbolic_functions#Hyperbolic_tangent)**
+   - Formula: `(e**x - e**(-x)) / (e**x + e**(-x))`
+   - Properties: Outputs between -1 and 1, zero-centered
+
+4. **Linear (Identity)**
+   - Formula: `f(x) = x`
+   - Properties: No non-linearity, useful for regression tasks or final layer
+
+## Implementation Details
+
+The framework uses automatic differentiation to compute gradients, allowing for efficient training of neural networks. Key features:
+
+- Dynamic computational graph construction
+- Automatic gradient computation through backpropagation
+- Support for batched inputs
+- Modular architecture for easy extension
+
+For implementation details of automatic differentiation, see the [Automatic Differentiation](#automatic-differentiation) section.
