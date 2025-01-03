@@ -103,6 +103,7 @@ y = Tensor([4.0, 5.0, 6.0], label="y")
 
 # Forward pass builds the computational graph
 z = x * y + x.exp()
+z.label = "z"
 
 # Backward pass computes all gradients
 z.backward()
@@ -110,7 +111,13 @@ z.backward()
 # Access gradients
 print(x.grad)  # dz/dx = y + exp(x)
 print(y.grad)  # dz/dy = x
+
+# Render a graph visualization
+z.render()
 ```
+
+![Computational Graph](./assets/computational_graph.png)
+*Example of a computational graph showing the forward and backward pass through operations*
 
 ## Testing
 

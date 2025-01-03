@@ -12,6 +12,10 @@ __pycache__/
 # vscode
 .vscode/
 
+# Explicitly keep assets folder
+!*/assets/
+!*/assets/*
+
 # Distribution / packaging
 .Python
 build/
