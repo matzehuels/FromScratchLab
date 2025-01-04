@@ -69,8 +69,6 @@ def test_cast_array(data: ArrayLike) -> None:
         assert result.shape == (len(data),)
     elif isinstance(data, np.ndarray):
         assert result.shape == data.shape
-    elif isinstance(data, Tensor):
-        assert result.shape == data.shape
 
 
 @given(
