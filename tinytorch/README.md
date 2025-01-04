@@ -211,14 +211,3 @@ TinyTorch supports several activation functions, each serving different purposes
 4. **Linear (Identity)**
    - Formula: `f(x) = x`
    - Properties: No non-linearity, useful for regression tasks or final layer
-
-## Implementation Details
-
-The framework uses automatic differentiation to compute gradients, allowing for efficient training of neural networks. Key features:
-
-- Dynamic computational graph construction
-- Automatic gradient computation through backpropagation
-- Support for batched inputs
-- Modular architecture for easy extension
-
-For implementation details of automatic differentiation, see the [Automatic Differentiation](#automatic-differentiation) section.
