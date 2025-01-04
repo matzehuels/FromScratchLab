@@ -5,7 +5,6 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tinytorch.engine import ArrayLike, Tensor, TensorLike, _cast_array, _cast_tensor
 from tests.conftest import (
     arrays_strategy,
     default_floats_strategy,
@@ -13,6 +12,7 @@ from tests.conftest import (
     default_lists_strategy,
     tensors_strategy,
 )
+from tinytorch.engine import ArrayLike, Tensor, TensorLike, _cast_array, _cast_tensor
 
 
 @given(
@@ -24,7 +24,10 @@ from tests.conftest import (
     )
 )
 def test_cast_array_invalid_input(invalid_data) -> None:
-    """Test that _cast_array raises ValueError or TypeError for invalid input types."""
+    """Test array casting errors.
+
+    Tests: TypeError for invalid inputs
+    """
     with pytest.raises(TypeError):
         _cast_array(invalid_data)
 
@@ -38,7 +41,10 @@ def test_cast_array_invalid_input(invalid_data) -> None:
     )
 )
 def test_cast_tensor_invalid_input(invalid_data) -> None:
-    """Test that _cast_tensor raises ValueError or TypeError for invalid input types."""
+    """Test tensor casting errors.
+
+    Tests: TypeError for invalid inputs
+    """
     with pytest.raises(TypeError):
         _cast_tensor(invalid_data)
 
@@ -49,7 +55,10 @@ def test_cast_tensor_invalid_input(invalid_data) -> None:
     )
 )
 def test_cast_array(data: ArrayLike) -> None:
-    """Test casting various types to numpy array."""
+    """Test array casting.
+
+    Tests: type conversion, shape preservation
+    """
     result = _cast_array(data)
     assert isinstance(result, np.ndarray)
     assert result.dtype == np.float32
@@ -74,7 +83,10 @@ def test_cast_array(data: ArrayLike) -> None:
     )
 )
 def test_cast_tensor(data: TensorLike) -> None:
-    """Test casting various types to Tensor."""
+    """Test tensor casting.
+
+    Tests: type conversion, shape preservation
+    """
     result = _cast_tensor(data)
     assert isinstance(result, Tensor)
     assert result.data.dtype == np.float32

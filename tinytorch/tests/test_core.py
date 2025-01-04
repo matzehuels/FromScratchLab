@@ -4,13 +4,16 @@ import numpy as np
 from hypothesis import given
 from hypothesis import strategies as st
 
-from tinytorch.engine import Operation, Tensor
 from tests.conftest import arrays_strategy, tensors_strategy
+from tinytorch.engine import Operation, Tensor
 
 
 @given(arrays_strategy())
 def test_constructor_and_core_properties(array: np.ndarray) -> None:
-    """Test basic functionality of Tensor class."""
+    """Test tensor construction.
+
+    Tests: data type, shape, repr
+    """
     tensor = Tensor(data=array)
     assert isinstance(tensor, Tensor)
     assert isinstance(tensor.data, np.ndarray)
@@ -21,10 +24,9 @@ def test_constructor_and_core_properties(array: np.ndarray) -> None:
 
 @given(tensors_strategy())
 def test_negation_operation(tensor: Tensor) -> None:
-    """Test tensor negation properties:
-    1. Double negation returns original: --x = x
-    2. Negation is same as multiplying by -1: -x = (-1 * x)
-    3. Negating zero returns zero
+    """Test tensor negation.
+
+    Tests: double negation, -1 multiplication, zero handling
     """
     # Test double negation
     double_neg = -(-tensor)
@@ -43,7 +45,10 @@ def test_negation_operation(tensor: Tensor) -> None:
 
 @given(arrays_strategy(), st.text(min_size=1))
 def test_tensor_labeling(array: np.ndarray, label: str) -> None:
-    """Test that tensors can be labeled."""
+    """Test tensor labeling.
+
+    Tests: label storage, None handling
+    """
     tensor = Tensor(data=array, label=label)
     assert tensor.label == label
 
@@ -54,7 +59,10 @@ def test_tensor_labeling(array: np.ndarray, label: str) -> None:
 
 @given(tensors_strategy())
 def test_repr_equals_str(tensor):
-    """Test that __repr__ and __str__ return the same value."""
+    """Test string representations.
+
+    Tests: __repr__ == __str__, labeled tensors
+    """
     assert str(tensor) == repr(tensor)
 
     # Also test with a labeled tensor

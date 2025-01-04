@@ -16,14 +16,9 @@ from tinytorch.engine import Operation, Tensor
 
 @given(same_shape_tensors_strategy())
 def test_add_operation(tensors: tuple[Tensor, Tensor]) -> None:
-    """Test addition operations between tensors and with scalars.
+    """Test tensor addition.
 
-    Properties tested:
-    1. Basic tensor addition: t1 + t2
-    2. Operation type is correctly set
-    3. Children are tracked properly
-    4. Scalar addition via __radd__
-    5. Numerical correctness against numpy
+    Tests: operation type, children tracking, scalar addition, numpy equivalence
     """
     t1, t2 = tensors
     note(f"Testing shapes: {t1.shape} and {t2.shape}")
@@ -129,7 +124,10 @@ def test_add_commutative(tensors: tuple[Tensor, Tensor]) -> None:
 
 @given(same_shape_tensors_strategy())
 def test_multiply_commutative(tensors: tuple[Tensor, Tensor]) -> None:
-    """Test that a * b = b * a"""
+    """Test multiplication commutativity.
+
+    Tests: a * b == b * a, children tracking
+    """
     t1, t2 = tensors
     note(f"Testing shapes: {t1.shape} and {t2.shape}")
     forward = t1 * t2
@@ -152,13 +150,9 @@ def test_multiply_commutative(tensors: tuple[Tensor, Tensor]) -> None:
     )
 )
 def test_divide_operation(tensors: tuple[Tensor, Tensor]) -> None:
-    """Test division operations between tensors and with scalars.
+    """Test tensor division.
 
-    Properties tested:
-    1. Basic tensor division: t1 / t2
-    2. Operation type is correctly set
-    3. Division-multiplication relationship: (a/b) * b ≈ a
-    4. Numerical correctness against numpy with appropriate tolerances
+    Tests: operation type, (a/b) * b ≈ a property, numpy equivalence
     """
     t1, t2 = tensors
     note(f"Testing shapes: {t1.shape} and {t2.shape}")
@@ -179,7 +173,10 @@ def test_divide_operation(tensors: tuple[Tensor, Tensor]) -> None:
 
 @given(tensors_strategy(), st.integers(2, 5))
 def test_power_operation(t1: Tensor, exponent: int) -> None:
-    """Test basic functionality of exponentiation."""
+    """Test tensor exponentiation.
+
+    Tests: operation type, children tracking, numpy equivalence
+    """
     result = t1**exponent
     assert result._op == Operation.POW
     assert result._children == {t1}
@@ -188,7 +185,10 @@ def test_power_operation(t1: Tensor, exponent: int) -> None:
 
 @given(tensors_strategy(), default_floats_strategy)
 def test_add_with_scalar(tensor: Tensor, scalar: float) -> None:
-    """Test addition between tensor and scalar."""
+    """Test scalar addition.
+
+    Tests: operation type, commutativity, numpy equivalence
+    """
     result1 = tensor + scalar
     result2 = scalar + tensor
     assert result1._op == Operation.ADD
@@ -200,7 +200,10 @@ def test_add_with_scalar(tensor: Tensor, scalar: float) -> None:
 
 @given(tensors_strategy(), default_floats_strategy)
 def test_multiply_with_scalar(tensor: Tensor, scalar: float) -> None:
-    """Test multiplication between tensor and scalar."""
+    """Test scalar multiplication.
+
+    Tests: operation type, commutativity, numpy equivalence
+    """
     result1 = tensor * scalar
     result2 = scalar * tensor
     assert result1._op == Operation.MULT
@@ -240,15 +243,9 @@ def test_divide_with_scalar(tensor: Tensor, scalar: float) -> None:
 
 
 def test_matmul_operation() -> None:
-    """Test matrix multiplication operations.
+    """Test matrix multiplication.
 
-    Properties tested:
-    1. Matrix-matrix multiplication
-    2. Matrix-vector multiplication
-    3. Vector-vector multiplication (dot product)
-    4. Operation type is correctly set
-    5. Children are tracked properly
-    6. Numerical correctness against numpy
+    Tests: matrix-matrix, matrix-vector, vector-vector ops, shape validation
     """
     # Test matrix-matrix multiplication
     m1 = Tensor([[1.0, 2.0], [3.0, 4.0]])  # 2x2
@@ -284,14 +281,9 @@ def test_matmul_operation() -> None:
 
 @given(tensors_strategy())
 def test_sum_operation(tensor: Tensor) -> None:
-    """Test sum operations on tensors.
+    """Test tensor summation.
 
-    Properties tested:
-    1. Basic tensor sum over all axes
-    2. Sum over specific axis
-    3. Operation type is correctly set
-    4. Children are tracked properly
-    5. Numerical correctness against numpy
+    Tests: all axes, specific axis, multiple axes, numpy equivalence
     """
     note(f"Testing shape: {tensor.shape}")
 
@@ -330,7 +322,10 @@ def test_sum_operation(tensor: Tensor) -> None:
 
 
 def test_stack_operation():
-    """Test stacking tensors along different axes."""
+    """Test tensor stacking.
+
+    Tests: 1D/2D tensors, different axes, shape validation
+    """
     # Test 1D tensors
     t1 = Tensor([1, 2, 3])
     t2 = Tensor([4, 5, 6])

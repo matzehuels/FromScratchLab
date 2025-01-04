@@ -17,6 +17,7 @@ from tinytorch.visualization import plot_graph
 
 ArrayLike = Union[np.ndarray, List[float | int], float, int]
 TensorLike = Union[ArrayLike, "Tensor"]
+AxisType = int | Tuple[int, ...]
 
 
 class Operation(Enum):
@@ -61,7 +62,7 @@ class Tensor(object):
 
     def __init__(
         self,
-        data: TensorLike,
+        data: ArrayLike,
         label: Optional[str] = None,
         _children: Optional[Tuple[Tensor, ...]] = None,
         _op: Optional[Operation] = None,
@@ -86,27 +87,44 @@ class Tensor(object):
         """Return string representation of the tensor."""
         return self.__repr__()
 
+    def render(self, output_format: str = "png") -> None:
+        """Renders the computational graph."""
+        plot_graph(self, output_format)
+
     @property
     def shape(self) -> Tuple[int, ...]:
         """Return the shape of the tensor's data."""
         return self.data.shape
-
-    def render(self, output_format: str = "png") -> None:
-        """Renders the computational graph."""
-        plot_graph(self, output_format)
 
     def _broadcast_backward(self, grad_term: np.ndarray, out_grad: np.ndarray) -> None:
         """Handle gradient broadcasting during backpropagation."""
         if self.data.shape != out_grad.shape:
             # For scalar tensors (shape is ()), sum all dimensions
             if self.data.shape == ():
-                self.grad = self.grad + np.sum(grad_term)
+                self.grad += np.sum(grad_term)
                 return
             # For non-scalar tensors, only sum over the broadcasted dimensions
             reduce_axes = tuple(range(len(out_grad.shape) - len(self.data.shape)))
-            self.grad = self.grad + np.sum(grad_term, axis=reduce_axes)
+            self.grad += np.sum(grad_term, axis=reduce_axes)
         else:
-            self.grad = self.grad + grad_term
+            self.grad += grad_term
+
+    @staticmethod
+    def stack(tensors: List[Tensor], axis: int = 0) -> Tensor:
+        """Stack arrays along specified axis and new tensor with stacked data"""
+        stacked = np.stack([t.data for t in tensors], axis=axis)
+        out = Tensor(stacked, None, tuple(tensors), Operation.STACK)
+
+        def _backward():
+            """Split gradient along stacking axis and distribute to inputs."""
+            grads = np.split(out.grad, len(tensors), axis=axis)
+            for tensor, grad in zip(tensors, grads):
+                # Squeeze out the stacking dimension before broadcasting
+                grad_squeezed = np.squeeze(grad, axis=axis) if axis < grad.ndim else grad
+                tensor._broadcast_backward(grad_squeezed, grad_squeezed)
+
+        out._backward = _backward
+        return out
 
     def __add__(self, other: TensorLike) -> Tensor:
         """Add other tensor-like object to this tensor.
@@ -311,6 +329,21 @@ class Tensor(object):
         out._backward = _backward
         return out
 
+    def lin(self) -> Tensor:
+        """Linear (identity) activation function.
+
+        Forward pass: z = x
+        Backward pass: dz/dx = 1
+        """
+        out = Tensor(self.data, None, (self,), Operation.IDENT)
+
+        def _backward():
+            """Local derivative is 1."""
+            self._broadcast_backward(out.grad, out.grad)
+
+        out._backward = _backward
+        return out
+
     def tanh(self) -> Tensor:
         """Compute hyperbolic tangent of tensor.
 
@@ -349,7 +382,7 @@ class Tensor(object):
         out._backward = _backward
         return out
 
-    def sum(self, axis: Optional[int | Tuple[int, ...]] = None) -> Tensor:
+    def sum(self, axis: Optional[AxisType] = None) -> Tensor:
         """Sum tensor over specified axes.
 
         Forward pass: z = sum(x, axis)
@@ -378,12 +411,10 @@ class Tensor(object):
         starting from this tensor. Then iterates through the nodes in reverse
         order, calling _backward() on each to accumulate gradients.
         """
-        # Build topo sort list
         topo: List[Tensor] = []
         visited = set()
 
         def _build_topo(v: Tensor) -> None:
-            """Build a topologically sorted list of tensors."""
             if v not in visited:
                 visited.add(v)
                 for child in v._children:
@@ -392,53 +423,7 @@ class Tensor(object):
 
         _build_topo(self)
 
-        # Go one tensor at a time and apply the chain rule
+        # Go one tensor at a time and apply the chain rule.
         self.grad = np.ones_like(self.data, np.float32)  # Initialize with ones for root
         for tensor in reversed(topo):
             tensor._backward()
-
-    @staticmethod
-    def stack(tensors: List[Tensor], axis: int = 0) -> Tensor:
-        """Stack tensors along a new axis.
-
-        Parameters
-        ----------
-        tensors : List[Tensor]
-            List of tensors to stack. All tensors must have the same shape.
-        axis : int
-            Axis along which to stack the tensors.
-
-        Returns
-        -------
-        Tensor
-            A new tensor with an additional dimension at the specified axis.
-        """
-        # Stack arrays along specified axis and new tensor with stacked data
-        stacked = np.stack([t.data for t in tensors], axis=axis)
-        out = Tensor(stacked, None, tuple(tensors), Operation.STACK)
-
-        def _backward():
-            """Split gradient along stacking axis and distribute to inputs."""
-            grads = np.split(out.grad, len(tensors), axis=axis)
-            for tensor, grad in zip(tensors, grads):
-                # Squeeze out the stacking dimension before broadcasting
-                grad_squeezed = np.squeeze(grad, axis=axis) if axis < grad.ndim else grad
-                tensor._broadcast_backward(grad_squeezed, grad_squeezed)
-
-        out._backward = _backward
-        return out
-
-    def lin(self) -> Tensor:
-        """Linear (identity) activation function.
-
-        Forward pass: z = x
-        Backward pass: dz/dx = 1
-        """
-        out = Tensor(self.data, None, (self,), Operation.IDENT)
-
-        def _backward():
-            """Local derivative is 1."""
-            self._broadcast_backward(out.grad, out.grad)
-
-        out._backward = _backward
-        return out

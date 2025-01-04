@@ -7,8 +7,6 @@ import numpy as np
 
 from tinytorch.engine import List, Tensor, TensorLike
 
-ShapeType = int | Tuple[int, ...]
-
 
 class Activation(Enum):
     """Options for activation functions."""
@@ -28,11 +26,22 @@ class Neuron(object):
         activation: Activation,
         label: Optional[str] = None,
     ) -> None:
-        """Initialize a neuron with Xavier/Glorot initialization.
+        """Initialize neuron with Xavier/Glorot initialization.
 
+        Parameters
+        ----------
+        n_input : int
+            Number of input features
+        activation : Activation
+            Activation function to use
+        label : str, optional
+            Name for visualization
+
+        Notes
+        ----------
         The weights are initialized from a normal distribution with:
-        - mean = 0
-        - std = sqrt(2 / (n_input + 1))  # +1 for the output
+            - mean = 0
+            - std = sqrt(2 / (n_input + 1))
 
         This helps prevent vanishing/exploding gradients and maintains
         similar variance of activations and gradients across layers.
@@ -71,9 +80,7 @@ class Neuron(object):
             2. Sum over all dimensions except batch
             3. Add bias and apply activation
         """
-        # Element-wise multiply and sum over all dimensions except batch
         a = (self.w * x).sum(axis=1) + self.b
-        a.label = self.label or "a"
         act_function = getattr(a, self.activation.value)
         out = act_function()
         return out
@@ -103,6 +110,19 @@ class Layer(object):
         activation: Activation = Activation.RELU,
         label: Optional[str] = None,
     ) -> None:
+        """Initialize layer of neurons.
+
+        Parameters
+        ----------
+        n_input : int
+            Number of input features
+        n_neurons : int, optional
+            Number of neurons in layer
+        activation : Activation, optional
+            Activation function for all neurons
+        label : str, optional
+            Name for visualization
+        """
         self.label = label
         self.n_input = n_input
         self.n_neurons = n_neurons
@@ -169,7 +189,6 @@ class MLP(object):
         dims = [n_input] + [n for n, _ in layers]  # [input_dim, hidden_dim, output_dim]
         activations = [Activation.LIN] + [act for _, act in layers]  # [lin, hidden_act, output_act]
 
-        # Create layers using zip to pair consecutive dimensions
         self.layers = [
             Layer(n_input=n_in, n_neurons=n_out, activation=act)
             for (n_in, n_out, act) in zip(dims[:-1], dims[1:], activations[1:])

@@ -12,7 +12,10 @@ from tinytorch.engine import Tensor
 @given(same_shape_tensors_strategy())
 @settings(deadline=None)
 def test_add_gradients(tensors):
-    """Test gradients of addition against PyTorch."""
+    """Test addition gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x, y = tensors
     z = x + y
     z.backward()
@@ -30,7 +33,10 @@ def test_add_gradients(tensors):
 
 @given(same_shape_tensors_strategy())
 def test_mul_gradients(tensors):
-    """Test gradients of multiplication against PyTorch."""
+    """Test multiplication gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x, y = tensors
     z = x * y
     z.backward()
@@ -46,7 +52,10 @@ def test_mul_gradients(tensors):
 
 @given(same_shape_tensors_strategy())
 def test_sub_gradients(tensors):
-    """Test gradients of subtraction against PyTorch."""
+    """Test subtraction gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x, y = tensors
     z = x - y
     z.backward()
@@ -62,7 +71,10 @@ def test_sub_gradients(tensors):
 
 @given(tensors_strategy())
 def test_exp_gradients(tensor):
-    """Test gradients of exp against PyTorch."""
+    """Test exponential gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x = tensor
     y = x.exp()
     y.backward()
@@ -76,7 +88,10 @@ def test_exp_gradients(tensor):
 
 @given(same_shape_tensors_strategy())
 def test_max_gradients(tensors):
-    """Test gradients of max against PyTorch."""
+    """Test maximum gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x, y = tensors
     z = x.max(y)
     z.backward()
@@ -92,7 +107,10 @@ def test_max_gradients(tensors):
 
 @given(tensors_strategy())
 def test_relu_gradients(tensor):
-    """Test gradients of ReLU against PyTorch."""
+    """Test ReLU gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x = tensor
     y = x.relu()
     y.backward()
@@ -106,7 +124,10 @@ def test_relu_gradients(tensor):
 
 @given(tensors_strategy())
 def test_chained_ops_gradients(tensor):
-    """Test gradients of chained operations (x^2 + exp(x)) against PyTorch."""
+    """Test chained operation gradients.
+
+    Tests: x^2 + exp(x) against PyTorch
+    """
     x = tensor
     y = x * x + x.exp()
     y.backward()
@@ -120,7 +141,10 @@ def test_chained_ops_gradients(tensor):
 
 @given(tensors_strategy())
 def test_self_mul_gradients(tensor):
-    """Test gradients when multiplying tensor by itself."""
+    """Test self-multiplication gradients.
+
+    Tests: x * x gradient against PyTorch
+    """
     x = tensor
     y = x * x  # Should give gradient of 2x
     y.backward()
@@ -134,7 +158,10 @@ def test_self_mul_gradients(tensor):
 
 @given(tensors_strategy())
 def test_self_add_gradients(tensor):
-    """Test gradients when adding tensor to itself."""
+    """Test self-addition gradients.
+
+    Tests: x + x gradient against PyTorch
+    """
     x = tensor
     y = x + x  # Should give gradient of 2
     y.backward()
@@ -148,7 +175,10 @@ def test_self_add_gradients(tensor):
 
 @given(tensors_strategy())
 def test_self_chain_gradients(tensor):
-    """Test gradients with chained self operations."""
+    """Test self-chained gradients.
+
+    Tests: x^2 + x gradient against PyTorch
+    """
     x = tensor
     y = (x * x) + x  # Should give gradient of 2x + 1
     y.backward()
@@ -162,7 +192,10 @@ def test_self_chain_gradients(tensor):
 
 @given(tensors_strategy())
 def test_broadcast_add_gradients(tensor):
-    """Test gradients when adding a scalar to a tensor (broadcasting)."""
+    """Test broadcast addition gradients.
+
+    Tests: tensor + scalar against PyTorch
+    """
     x = tensor
     scalar = Tensor(2.0)  # scalar will be broadcast
     y = x + scalar
@@ -179,7 +212,10 @@ def test_broadcast_add_gradients(tensor):
 
 @given(tensors_strategy())
 def test_broadcast_mul_gradients(tensor):
-    """Test gradients when multiplying a scalar with a tensor (broadcasting)."""
+    """Test broadcast multiplication gradients.
+
+    Tests: tensor * scalar against PyTorch
+    """
     x = tensor
     scalar = Tensor(3.0)  # scalar will be broadcast
     y = x * scalar
@@ -195,7 +231,10 @@ def test_broadcast_mul_gradients(tensor):
 
 
 def test_broadcast_specific_shapes():
-    """Test broadcasting with specific shape combinations."""
+    """Test broadcast shape handling.
+
+    Tests: scalar-vector, vector-matrix, scalar-matrix
+    """
     # Test broadcasting scalar to vector
     x = Tensor([1.0, 2.0, 3.0])
     scalar = Tensor(2.0)
@@ -225,7 +264,10 @@ def test_broadcast_specific_shapes():
 
 
 def test_broadcast_chain_operations():
-    """Test broadcasting through a chain of operations."""
+    """Test broadcast chain gradients.
+
+    Tests: (x * v) + s with different shapes
+    """
     # Create tensors of different shapes
     x = Tensor([[1.0, 2.0], [3.0, 4.0]])  # (2, 2)
     v = Tensor([0.5, 1.0])  # (2,)
@@ -249,7 +291,10 @@ def test_broadcast_chain_operations():
 
 @given(tensors_strategy())
 def test_multiple_use_gradients(tensor):
-    """Test gradient accumulation when a tensor is used multiple times in computation."""
+    """Test multiple use gradients.
+
+    Tests: x^2 + x gradient accumulation
+    """
     x = tensor
     y = x * x + x  # Uses x twice: once in x*x and once in +x
     y.backward()
@@ -264,7 +309,10 @@ def test_multiple_use_gradients(tensor):
 
 @given(tensors_strategy())
 def test_neg_gradients(tensor):
-    """Test gradients of negation against PyTorch."""
+    """Test negation gradients.
+
+    Tests: -x gradient against PyTorch
+    """
     x = tensor
     y = -x  # Should give gradient of -1
     y.backward()
@@ -278,7 +326,10 @@ def test_neg_gradients(tensor):
 
 @given(tensors_strategy(), st.integers(2, 5))
 def test_pow_gradients(tensor, exponent):
-    """Test gradients of power operation against PyTorch."""
+    """Test power gradients.
+
+    Tests: x^n gradient against PyTorch
+    """
     x = tensor
     y = x**exponent  # Should give gradient of n * x^(n-1)
     y.backward()
@@ -292,7 +343,10 @@ def test_pow_gradients(tensor, exponent):
 
 @given(same_shape_tensors_strategy())
 def test_min_gradients(tensors):
-    """Test gradients of min operation against PyTorch."""
+    """Test minimum gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x, y = tensors
     z = x.min(y)
     z.backward()
@@ -308,7 +362,10 @@ def test_min_gradients(tensors):
 
 @given(tensors_strategy())
 def test_sum_gradients(tensor):
-    """Test gradients of sum operation against PyTorch."""
+    """Test sum gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x = tensor
     y = x.sum()  # Sum over all axes
     y.backward()
@@ -321,7 +378,10 @@ def test_sum_gradients(tensor):
 
 
 def test_stack_gradients():
-    """Test gradient computation for stacked tensors against PyTorch."""
+    """Test stack gradients.
+
+    Tests: simple stack+sum, complex stack+multiply
+    """
     # Test 1: Simple stacking and sum
     t1 = Tensor([1.0, 2.0])
     t2 = Tensor([3.0, 4.0])
@@ -373,7 +433,10 @@ def test_stack_gradients():
 
 @given(tensors_strategy())
 def test_lin_gradients(tensor):
-    """Test gradients of linear activation against PyTorch."""
+    """Test linear activation gradients.
+
+    Tests: gradient computation against PyTorch
+    """
     x = tensor
     y = x.lin()  # Should give gradient of 1
     y.backward()

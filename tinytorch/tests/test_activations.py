@@ -17,7 +17,10 @@ from tinytorch.engine import Operation, Tensor
 @given(same_shape_tensors_strategy())
 @settings(deadline=None)
 def test_max_operation(tensors: tuple[Tensor, Tensor]) -> None:
-    """Test element-wise maximum operation."""
+    """Test element-wise maximum.
+
+    Tests: operation type, numpy equivalence
+    """
     t1, t2 = tensors
     result = t1.max(t2)
     assert result._op == Operation.MAX
@@ -26,13 +29,9 @@ def test_max_operation(tensors: tuple[Tensor, Tensor]) -> None:
 
 @given(tensors_strategy())
 def test_lin_operation(tensor):
-    """Test linear (identity) activation function.
+    """Test linear activation.
 
-    Properties tested:
-    1. Basic identity function: output equals input
-    2. Operation type is correctly set
-    3. Children are tracked properly
-    4. Numerical correctness against numpy
+    Tests: operation type, children tracking, identity property
     """
     result = tensor.lin()
     assert result._op == Operation.IDENT
@@ -46,7 +45,10 @@ def test_lin_operation(tensor):
 
 @given(tensors_strategy(), default_floats_strategy)
 def test_max_with_scalar(tensor: Tensor, scalar: float) -> None:
-    """Test maximum operation with scalar."""
+    """Test scalar maximum.
+
+    Tests: operation type, numpy equivalence
+    """
     result = tensor.max(scalar)
     assert result._op == Operation.MAX
     np.testing.assert_array_equal(result.data, np.maximum(tensor.data, scalar))
@@ -54,14 +56,20 @@ def test_max_with_scalar(tensor: Tensor, scalar: float) -> None:
 
 @given(tensors_strategy())
 def test_relu_operation(tensor: Tensor) -> None:
-    """Test ReLU activation function."""
+    """Test ReLU activation.
+
+    Tests: max(0,x) property, numpy equivalence
+    """
     result = tensor.relu()
     np.testing.assert_array_equal(result.data, np.maximum(tensor.data, 0))
 
 
 @given(tensors_strategy())
 def test_exp_operation(t1: Tensor) -> None:
-    """Test basic functionality of e^x."""
+    """Test exponential function.
+
+    Tests: operation type, children tracking, numpy equivalence
+    """
     result = t1.exp()
     assert result._op == Operation.EXP
     assert result._children == {t1}
@@ -70,7 +78,10 @@ def test_exp_operation(t1: Tensor) -> None:
 
 @given(tensors_strategy())
 def test_sigmoid_operation(tensor: Tensor) -> None:
-    """Test sigmoid activation function."""
+    """Test sigmoid activation.
+
+    Tests: 1/(1+e^(-x)) formula, numpy equivalence
+    """
     result = tensor.sigmoid()
     np.testing.assert_allclose(result.data, 1 / (1 + np.exp(-tensor.data)), rtol=RTOL, atol=ATOL)
 
@@ -88,6 +99,9 @@ def test_sigmoid_operation(tensor: Tensor) -> None:
     )
 )
 def test_tanh_operation(tensor: Tensor) -> None:
-    """Test hyperbolic tangent function."""
+    """Test hyperbolic tangent.
+
+    Tests: tanh formula, numpy equivalence
+    """
     result = tensor.tanh()
     np.testing.assert_allclose(result.data, np.tanh(tensor.data), rtol=RTOL, atol=ATOL)
